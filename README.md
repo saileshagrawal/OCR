@@ -1,5 +1,4 @@
 # OCR
 This repo contains the tesseract ocr code to digitize images
 
-PROVIDE THE OUTPUT PATH IN LINE NUMBER #51
-CALL THE CONVERT FUNCTION BY PROVIDING IT THE INPUT IMAGE FILE PATH LINE NUMBER #56
+run the file in the cmd and provide the input path for image as well as the output file path to convert(telugu image only for now). 
