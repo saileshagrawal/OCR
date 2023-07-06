@@ -3,74 +3,106 @@ from PIL import Image
 import pytesseract
 from pdf2image import convert_from_path
 import numpy as np
-#from docx import Document
+
+import cv2
+import numpy as np
+import uuid
+
+# Adding custom options
+custom_config = r'--oem 3 --psm 1'
+
+def clean_image(image):
+
+     def HSV_mask(img_hsv, lower):
+          lower = np.array(lower)
+          upper = np.array([255, 255, 255])
+          return cv2.inRange(img_hsv, lower, upper)
+     
+     # img = cv2.imread("/home/srihari/Desktop/water_mark_issue/im/Gwalior_HC_page-0001.jpg")
+     img = image
+
+     img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
 
-# Set the tesseract path to the location of your tesseract executable
-#pytesseract.pytesseract.tesseract_cmd = r'"C:\Program Files\Tesseract-OCR\tesseract.exe"'
+     img_gray[img_gray >= 220] = 255
 
-# def preprocess(image):
-#     # Convert to grayscale
-#     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-#     # Noise removal with iterative bilateral filter
-#     gray = cv2.bilateralFilter(gray, 11, 17, 17)
-    
-#     # Perform a dilation and erosion to remove some noise
-#     kernel = np.ones((1, 1), np.uint8)
-#     gray = cv2.dilate(gray, kernel, iterations=1)
-#     gray = cv2.erode(gray, kernel, iterations=1)
+     mask1 = HSV_mask(img_hsv, [0, 0, 155])[..., None].astype(np.float32)
 
-#     # Apply threshold to get image with only black and white
-#     gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
-#             cv2.THRESH_BINARY, 31, 2)
-    
-#     return gray
+     mask2 = HSV_mask(img_hsv, [0, 20, 0])
+     masked = np.uint8((img + mask1) / (1 + mask1 / 255))
 
-# def pdf_to_text(pdf_path):
-#     # Convert PDF to images
-#     images = convert_from_path(pdf_path)
-#     # Process each image
-#     for i, image in enumerate(images):
-#         # Preprocess the image
-#         image = np.array(image)
-#         #processed_image = preprocess(image)
 
-#         # Perform OCR on the processed image
-#         text = pytesseract.image_to_string(Image.fromarray(image), lang='eng+tel')
 
-#         # Print the OCR outputs
-#         print(f'--- Page {i+1} ---')
-#         print(text)
+     gray = cv2.cvtColor(masked, cv2.COLOR_RGB2GRAY)
+     gray[gray >= 175] = 255
+
+
+     gray[mask2 == 0] = img_gray[mask2 == 0]
+
+     # clean = clean_image(gray)
+     gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+
+     image_id=str(uuid.uuid4())
+     return gray
+
+
+
+
+def pdf_to_text(pdf_path, language):
+    # Convert PDF to images
+    images = convert_from_path(pdf_path)
+
+    # Process each image
+    for i, image in enumerate(images):
+        # Preprocess the image
+        if (i>=0):
+
+            image = np.array(image)
+            #processed_image = preprocess(image)
+            # # Perform OCR on the processed image
+            text = pytesseract.image_to_string((clean_image(image)), lang=f'{language}')
+
+            # Print the OCR outputs
+            print(f'--- Page {i+1} ---')
+            print(text)
+            with open(output_path, 'a', encoding='utf-8') as f:
+                f.write(f'--- Page {i+1} ---')
+                f.write(text)
 
 def convert(path):
     img=Image.open(path)
-    text=pytesseract.image_to_string(img, lang='eng+ori')
+    img=np.array(img)
+    #print(img)
+    text=pytesseract.image_to_string(clean_image(img), lang='ori')
     print(text)
     #edit the output file path here
     # Open the file in write mode and write the translated text
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, 'w',encoding='UTF-8') as f:
         f.write(text)
-# Path to your image
-image_path = input('Enter the path to the image file: ')
+
+# Path to your pdf
+file_path = input('Enter the path to the PDF file: ')
 # Path to your output text file
 output_path = input('Enter the path to save the output text file: ')
-convert(image_path)
-# Path to your PDF
-# pdf_path = r'converted files\b420043_assignment_11.pdf'
+print('\nSelect the language:')
+print('For Telugu Type: tel')
+print('For English Type: eng')
+print('For Oriya Type: ori\n')
 
-# import os
+language = input('Enter the Input language of the pdf\n')
 
-# # Use os.path.join to form file paths
-# file_path = r"C:\Users\Sailesh\Downloads\class-10-sample-paper-2020-21-telugu.pdf"
+#convert(file_path,language)
 
-# try:
-#     with open(file_path, 'rb') as f:
-#         pdf_to_text(file_path)
-#         pass
-# except FileNotFoundError:
-#     print(f"File not found: {file_path}")
-# except PermissionError:
-#     print(f"Permission denied: {file_path}")
-# except Exception as e:
-#     print(f"An error occurred: {e}")
+try:
+    with open(file_path, 'rb') as f:
+        pdf_to_text(file_path,language)
+        pass
+except FileNotFoundError:
+    print(f"File not found: {file_path}")
+except PermissionError:
+    print(f"Permission denied: {file_path}")
+except Exception as e:
+    print(f"An error occurred: {e}")
+
