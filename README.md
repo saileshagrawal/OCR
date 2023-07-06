@@ -10,4 +10,8 @@ This repo contains the tesseract ocr code to digitize images
 4)Add Tesseract OCR to your environment variables
 
 Install the dependencies by : pip install -r requirements.txt
-run the file in the cmd and provide the input path for the image as well as the output file path to convert(Telugu image only for now).
+
+INPUTS: 
+1) INPUT FILE PATH
+2) OUTPUT FILE PATH
+3) LANGUAGE(tel for telugu, ori for oriya, eng for english)
